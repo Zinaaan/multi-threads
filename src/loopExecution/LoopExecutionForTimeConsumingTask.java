@@ -15,7 +15,7 @@ import java.util.concurrent.*;
  * 2. What if this threads have 10000 or more elements?
  * --- multi-threads via ExecutorService
  */
-public class LoopExecution {
+public class LoopExecutionForTimeConsumingTask {
 
     public static void main(String[] args) {
         // Simulate a array full of integer
