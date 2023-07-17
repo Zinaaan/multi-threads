@@ -48,7 +48,7 @@ public class ConcurrentLruCache {
             lock.readLock().lock();
             try {
 
-                // Can not invoke put method, it will case deadlock as the put method will acquire write lock as well
+                // Can not invoke put method in multi-thread environment, it will cause deadlock as the put method will acquire write lock as well
 //                put(key, curr.value);
 
                 list.removeNode(cache.get(key));
