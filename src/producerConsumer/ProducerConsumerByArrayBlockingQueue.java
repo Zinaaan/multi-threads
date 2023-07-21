@@ -1,9 +1,6 @@
 package producerConsumer;
 
-import java.util.ArrayDeque;
-import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -11,18 +8,20 @@ import java.util.concurrent.TimeUnit;
  * @date 2023/07/19 21:28
  * @description
  */
-public class ProducerConsumerBySemaphore {
-
+public class ProducerConsumerByArrayBlockingQueue {
     private final int capacity = 10;
-    private final Queue<String> queue = new ArrayDeque<>(capacity);
-    private final Semaphore semaphore = new Semaphore(0);
+    private final ArrayBlockingQueue<String> queue = new ArrayBlockingQueue<>(capacity);
 
     private Thread producer() {
         return new Thread(() -> {
             while (true) {
                 String message = "message";
-                queue.offer(message);
-                semaphore.release();
+                try {
+                    // Write a message, waiting here if the queue is full
+                    queue.put(message);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 System.out.println("write message: " + message);
                 try {
                     TimeUnit.SECONDS.sleep(1);
@@ -36,26 +35,25 @@ public class ProducerConsumerBySemaphore {
     private Thread consumer() {
         return new Thread(() -> {
             while (true) {
+                String message = null;
                 try {
-                    semaphore.acquire();
+                    // Got a message, waiting here if queue is empty
+                    message = queue.take();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                if(!queue.isEmpty()){
-                    String message = queue.poll();
-                    System.out.println("read message: " + message);
-                    try {
-                        TimeUnit.SECONDS.sleep(1);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                System.out.println("read message: " + message);
+                try {
+                    TimeUnit.SECONDS.sleep(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
         });
     }
 
     public static void main(String[] args) {
-        ProducerConsumerBySemaphore producerConsumerByThread = new ProducerConsumerBySemaphore();
+        ProducerConsumerByArrayBlockingQueue producerConsumerByThread = new ProducerConsumerByArrayBlockingQueue();
         producerConsumerByThread.producer().start();
         producerConsumerByThread.consumer().start();
     }
