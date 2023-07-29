@@ -22,7 +22,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * <p>
  * Functional:
  * 1. get: If key is not exists in the hashmap, return -1. Otherwise return Node.value and switch the value to the frequent used position
- * <p>
  * 2. put: If key is exists in the hashmap, change the old value to the new one and switch the value to the frequent used position
  * --Otherwise:
  * <1>. If the hashmap is full, evict the LRU data and put the current data into the beginning of the bidirectionalLinkedList
@@ -48,7 +47,9 @@ public class ConcurrentLruCache {
             lock.readLock().lock();
             try {
 
-                // Can not invoke put method in multi-thread environment, it will cause deadlock as the put method will acquire write lock as well
+                // Do not invoke put method in multi-thread environment as it will cause deadlock as the put method will acquire write lock as well
+                // Because a write lock is exclusive and does not allow concurrent read or write access.
+                // Since you already have a read lock acquired, the writeLock().lock() call will block until all read locks are released.
 //                put(key, curr.value);
 
                 list.removeNode(cache.get(key));
@@ -164,11 +165,12 @@ public class ConcurrentLruCache {
     }
 
     public static void main(String[] args) {
-        ExecutorService executorService = Executors.newFixedThreadPool(10);
-        CountDownLatch countDownLatch = new CountDownLatch(10);
-        ConcurrentHashMap<String, List<String>> result = new ConcurrentHashMap<>();
+        final int max = 5;
+        ExecutorService executorService = Executors.newFixedThreadPool(max);
+        CountDownLatch countDownLatch = new CountDownLatch(max);
+        ConcurrentHashMap<String, List<String>> result = new ConcurrentHashMap<>(max);
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < max; i++) {
             executorService.execute(() -> {
                 ConcurrentLruCache concurrentLruCache = new ConcurrentLruCache(3);
                 concurrentLruCache.put(1, 5);
@@ -178,10 +180,10 @@ public class ConcurrentLruCache {
                 concurrentLruCache.get(5);
                 countDownLatch.countDown();
 
+                result.putIfAbsent(Thread.currentThread().getName(), new ArrayList<>());
                 BidirectionalLinkedList linkedList = concurrentLruCache.getList();
                 Node dummy = linkedList.head.next;
                 while (dummy != null) {
-                    result.putIfAbsent(Thread.currentThread().getName(), new ArrayList<>());
                     result.get(Thread.currentThread().getName()).add("key: " + dummy.key + ", value: " + dummy.value);
                     dummy = dummy.next;
                 }
