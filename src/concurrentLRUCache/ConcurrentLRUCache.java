@@ -27,14 +27,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * <1>. If the hashmap is full, evict the LRU data and put the current data into the beginning of the bidirectionalLinkedList
  * <2>. Otherwise just put the current data into the beginning of the bidirectionalLinkedList
  */
-public class ConcurrentLruCache {
+public class ConcurrentLRUCache {
 
     private final ConcurrentHashMap<Integer, Node> cache;
     private final ReentrantReadWriteLock lock;
     private final BidirectionalLinkedList list;
     private final int capacity;
 
-    public ConcurrentLruCache(int capacity) {
+    public ConcurrentLRUCache(int capacity) {
         cache = new ConcurrentHashMap<>();
         list = new BidirectionalLinkedList();
         lock = new ReentrantReadWriteLock();
@@ -47,14 +47,17 @@ public class ConcurrentLruCache {
             lock.readLock().lock();
             try {
 
-                // Do not invoke put method in multi-thread environment as it will cause deadlock as the put method will acquire write lock as well
+                // Invoke put method in multi-thread environment will cause deadlock as the put method will acquire write lock as well
                 // Because a write lock is exclusive and does not allow concurrent read or write access.
                 // Since you already have a read lock acquired, the writeLock().lock() call will block until all read locks are released.
 //                put(key, curr.value);
 
-                list.removeNode(cache.get(key));
-                // put the data into the beginning
-                list.addFirst(curr);
+                Node node = list.removeNode(curr);
+                // If successfully removed the node
+                if(node.prev == null && node.next == null){
+                    // put the value at the beginning of the bidirectional linked list
+                    list.addFirst(curr);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
@@ -89,9 +92,25 @@ public class ConcurrentLruCache {
         }
     }
 
+    public boolean remove(int key) {
+        lock.writeLock().lock();
+        try {
+            if (cache.containsKey(key)) {
+                Node remove = cache.remove(key);
+                list.removeNode(remove);
+                return true;
+            }
+        } catch (Exception e) {
+            System.out.println("Error in removing key: " + key + ", reason: " + e.getMessage());
+        } finally {
+            lock.writeLock().unlock();
+        }
+        return false;
+    }
+
     @Override
     public String toString() {
-        return "ConcurrentLruCache{" +
+        return "ConcurrentLRUCache{" +
                 "cache=" + cache +
                 ", list=" + list +
                 ", capacity=" + capacity +
@@ -164,38 +183,61 @@ public class ConcurrentLruCache {
         }
     }
 
-    public static void main(String[] args) {
-        final int max = 5;
-        ExecutorService executorService = Executors.newFixedThreadPool(max);
-        CountDownLatch countDownLatch = new CountDownLatch(max);
-        ConcurrentHashMap<String, List<String>> result = new ConcurrentHashMap<>(max);
+    public static void main(String[] args) throws InterruptedException {
+        int capacity = 3;
+        ConcurrentLRUCache cache = new ConcurrentLRUCache(capacity);
 
-        for (int i = 0; i < max; i++) {
-            executorService.execute(() -> {
-                ConcurrentLruCache concurrentLruCache = new ConcurrentLruCache(3);
-                concurrentLruCache.put(1, 5);
-                concurrentLruCache.put(2, 3);
-                concurrentLruCache.put(5, 3);
-                concurrentLruCache.put(4, 1);
-                concurrentLruCache.get(5);
-                countDownLatch.countDown();
+        ExecutorService executorService = Executors.newFixedThreadPool(4);
 
-                result.putIfAbsent(Thread.currentThread().getName(), new ArrayList<>());
-                BidirectionalLinkedList linkedList = concurrentLruCache.getList();
-                Node dummy = linkedList.head.next;
-                while (dummy != null) {
-                    result.get(Thread.currentThread().getName()).add("key: " + dummy.key + ", value: " + dummy.value);
-                    dummy = dummy.next;
-                }
-            });
-        }
+        // Use CountDownLatch to wait for all threads to complete
+        CountDownLatch latch = new CountDownLatch(4);
 
-        try {
-            countDownLatch.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        System.out.println("result: " + result);
+        // Thread 1: Put values into the cache
+        executorService.submit(() -> {
+            cache.put(1, 10);
+            cache.put(2, 20);
+            cache.put(3, 30);
+            latch.countDown();
+        });
+
+        // Thread 2: Read values from the cache
+        executorService.submit(() -> {
+            // True
+            System.out.println("cache.get(4) == null? " + (cache.get(4) == null));
+            // 10
+            System.out.println("cache.get(1).value: " + cache.get(1).value);
+            // 20
+            System.out.println("cache.get(2).value: " + cache.get(2).value);
+            latch.countDown();
+        });
+
+        // Thread 3: Remove a key from the cache
+        executorService.submit(() -> {
+            cache.remove(3);
+            // True
+            System.out.println("cache.get(3) == null? " + (cache.get(3) == null));
+            latch.countDown();
+        });
+
+        // Thread 4: Put values exceeding the capacity to trigger eviction
+        executorService.submit(() -> {
+            cache.put(4, 40);
+            // False
+            System.out.println("cache.get(1) == null? " + (cache.get(1) == null));
+            latch.countDown();
+        });
+
+        // Wait for all threads to complete
+        latch.await();
         executorService.shutdown();
+        // Verify cache state after all operations
+         // True, Key 3 should have been removed
+        System.out.println("cache.get(3) == null? " + (cache.get(3) == null));
+        // 10, Key 1 should still be in the cache
+        System.out.println("cache.get(1).value: " + cache.get(1).value);
+         // 20,  Key 2 should still be in the cache
+        System.out.println("cache.get(2).value: " + cache.get(2).value);
+        // False, Key 4 should be in the cache
+        System.out.println("cache.get(4) == null? " + (cache.get(4) == null));
     }
 }
