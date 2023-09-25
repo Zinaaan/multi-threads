@@ -1,7 +1,5 @@
 package concurrentLRUCache;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -92,7 +90,7 @@ public class ConcurrentLRUCache {
         }
     }
 
-    public boolean remove(int key) {
+    public boolean evict(int key) {
         lock.writeLock().lock();
         try {
             if (cache.containsKey(key)) {
@@ -115,10 +113,6 @@ public class ConcurrentLRUCache {
                 ", list=" + list +
                 ", capacity=" + capacity +
                 '}';
-    }
-
-    public BidirectionalLinkedList getList() {
-        return list;
     }
 
     private static class BidirectionalLinkedList {
@@ -213,7 +207,7 @@ public class ConcurrentLRUCache {
 
         // Thread 3: Remove a key from the cache
         executorService.submit(() -> {
-            cache.remove(3);
+            cache.evict(3);
             // True
             System.out.println("cache.get(3) == null? " + (cache.get(3) == null));
             latch.countDown();
