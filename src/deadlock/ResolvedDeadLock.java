@@ -7,9 +7,9 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * @author lzn
  * @date 2023/07/08 11:20
- * @description Resolve the deadlock problem via the tryLock method ReentrantLock
+ * @description Resolve the deadlock problem via the tryLock method of ReentrantLock
  */
-public class SolveDeadLock {
+public class ResolvedDeadLock {
 
     private final Lock lock1 = new ReentrantLock();
     private final Lock lock2 = new ReentrantLock();
@@ -67,7 +67,7 @@ public class SolveDeadLock {
     }
 
     public static void main(String[] args) {
-        SolveDeadLock deadLock = new SolveDeadLock();
+        ResolvedDeadLock deadLock = new ResolvedDeadLock();
         deadLock.method1().start();
         deadLock.method2().start();
     }

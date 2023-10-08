@@ -1,2 +1,2 @@
 # multi-threads
-Multi-thread examples for some typical scenarios like alternate execution, sequential execution, deadlock, etc. via multiple ways
+Some representative multithreading problems and their solutions, such as alternate execution, sequential execution, and deadlocks.
