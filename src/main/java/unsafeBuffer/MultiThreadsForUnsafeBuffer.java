@@ -25,46 +25,38 @@ public class MultiThreadsForUnsafeBuffer {
         return INSTANCE;
     }
 
-    private final Map<UnsafeBuffer, Long> latencyMap = new HashMap<>();
-    private final ThreadLocal<UnsafeBuffer> reusableKeyBuffer = ThreadLocal.withInitial(() -> new UnsafeBuffer(ByteBuffer.allocate(8)));
-    private final ThreadLocal<UnsafeBuffer> reusableRetrieveBuffer = ThreadLocal.withInitial(() -> new UnsafeBuffer(ByteBuffer.allocate(8)));
+    private final Map<MetricBuffer, Long> latencyMap = new HashMap<>();
+    private final ThreadLocal<MetricBuffer> reusableKeyBuffer = ThreadLocal.withInitial(() -> new MetricBuffer(ByteBuffer.allocate(8)));
+    private final ThreadLocal<MetricBuffer> reusableRetrieveBuffer = ThreadLocal.withInitial(() -> new MetricBuffer(ByteBuffer.allocate(8)));
     private final ReentrantLock lock = new ReentrantLock();
 
-    public void populateMetrics(UnsafeBuffer unsafeBuffer) {
-        int clientId = unsafeBuffer.getInt(0);
-        int point = unsafeBuffer.getInt(4);
-        long latency = unsafeBuffer.getLong(8);
-        UnsafeBuffer keyBuffer = reusableKeyBuffer.get();
-        keyBuffer.putInt(0, clientId);
-        keyBuffer.putInt(4, point);
+    public void aggregateMetrics(byte[] bytes) {
+        MetricBuffer keyBuffer = reusableKeyBuffer.get();
+        keyBuffer.wrap(bytes);
         lock.lock();
         try {
             if (!latencyMap.containsKey(keyBuffer)) {
-                UnsafeBuffer key = new UnsafeBuffer(ByteBuffer.allocate(8));
-                key.putInt(0, clientId);
-                key.putInt(4, point);
-                System.out.println("new key clientId: " + clientId + ", point: " + point);
-                latencyMap.put(key, latency);
+                MetricBuffer key = new MetricBuffer(ByteBuffer.allocate(8));
+                key.wrap(bytes);
+                System.out.println("new key clientId: " + key.getClientId() + ", point: " + key.getPoint());
+                latencyMap.put(key, keyBuffer.getLatency());
             } else {
-                System.out.println("old key clientId: " + clientId + ", point: " + point);
-                latencyMap.put(keyBuffer, latency);
+                System.out.println("old key clientId: " + keyBuffer.getClientId() + ", point: " + keyBuffer.getPoint());
+                latencyMap.put(keyBuffer, keyBuffer.getLatency());
             }
         } finally {
             lock.unlock();
         }
     }
 
-    public long getLatency(UnsafeBuffer unsafeBuffer) {
-        int clientId = unsafeBuffer.getInt(0);
-        int point = unsafeBuffer.getInt(4);
-        UnsafeBuffer keyBuffer = reusableRetrieveBuffer.get();
-        keyBuffer.putInt(0, clientId);
-        keyBuffer.putInt(4, point);
-        System.out.println("get key clientId: " + clientId + ", point: " + point + ", latency: " + unsafeBuffer.getLong(8));
+    public long getLatency(byte[] bytes) {
+        MetricBuffer keyBuffer = reusableRetrieveBuffer.get();
+        keyBuffer.wrap(bytes);
+        System.out.println("get key clientId: " + keyBuffer.getClientId() + ", point: " + keyBuffer.getPoint() + ", latency: " + keyBuffer.getLatency());
         return latencyMap.getOrDefault(keyBuffer, 0L);
     }
 
-    public Map<UnsafeBuffer, Long> getLatencyMap() {
+    public Map<MetricBuffer, Long> getLatencyMap() {
         return latencyMap;
     }
 
@@ -77,7 +69,7 @@ public class MultiThreadsForUnsafeBuffer {
         ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
         LocalDateTime startTime = LocalDateTime.now();
 
-        List<UnsafeBuffer> keyList = new ArrayList<>();
+        List<byte[]> keyList = new ArrayList<>();
         for (int i = 0; i < populateCount; i++) {
             long start = System.nanoTime();
             UnsafeBuffer unsafeBuffer = new UnsafeBuffer(ByteBuffer.allocate(16));
@@ -86,12 +78,12 @@ public class MultiThreadsForUnsafeBuffer {
 //            unsafeBuffer.putInt(0, 5);
 //            unsafeBuffer.putInt(4, 3);
             unsafeBuffer.putLong(8, System.nanoTime() - start);
-            keyList.add(unsafeBuffer);
+            keyList.add(unsafeBuffer.byteArray());
         }
         for (int i = 0; i < populateCount; i++) {
             final int finalI = i;
             executorService.execute(() -> {
-                creationByThreadLocal.populateMetrics(keyList.get(finalI));
+                creationByThreadLocal.aggregateMetrics(keyList.get(finalI));
                 latch.countDown();
             });
         }
