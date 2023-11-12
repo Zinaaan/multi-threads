@@ -1,5 +1,7 @@
 package alternateExecution;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -9,6 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @date 2023/07/03 22:14
  * @description
  */
+@Slf4j
 public class AlternateExecutionByCompletableFuture {
     private static final AtomicInteger ATOMIC_INTEGER = new AtomicInteger();
     private static final int MAX_NUM = 100;
@@ -27,7 +30,7 @@ public class AlternateExecutionByCompletableFuture {
                 if (ATOMIC_INTEGER.get() > MAX_NUM) {
                     return;
                 }
-                System.out.println(ATOMIC_INTEGER.get() + "a");
+                log.info("{}a", ATOMIC_INTEGER.get());
                 SEMAPHORE_B.release();
             }
         });
@@ -43,7 +46,7 @@ public class AlternateExecutionByCompletableFuture {
                 if (ATOMIC_INTEGER.get() > MAX_NUM) {
                     return;
                 }
-                System.out.println(ATOMIC_INTEGER.get() + "b");
+                log.info("{}b", ATOMIC_INTEGER.get());
                 SEMAPHORE_A.release();
             }
         }).join();

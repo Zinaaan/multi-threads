@@ -1,5 +1,7 @@
 package producerConsumer;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -8,6 +10,7 @@ import java.util.concurrent.TimeUnit;
  * @date 2023/07/19 21:28
  * @description
  */
+@Slf4j
 public class ProducerConsumerByArrayBlockingQueue {
     private final int capacity = 10;
     private final ArrayBlockingQueue<String> queue = new ArrayBlockingQueue<>(capacity);
@@ -22,7 +25,7 @@ public class ProducerConsumerByArrayBlockingQueue {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                System.out.println("write message: " + message);
+                log.info("write message: {}", message);
                 try {
                     TimeUnit.SECONDS.sleep(1);
                 } catch (InterruptedException e) {
@@ -42,7 +45,7 @@ public class ProducerConsumerByArrayBlockingQueue {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                System.out.println("read message: " + message);
+                log.info("read message: {}", message);
                 try {
                     TimeUnit.SECONDS.sleep(1);
                 } catch (InterruptedException e) {

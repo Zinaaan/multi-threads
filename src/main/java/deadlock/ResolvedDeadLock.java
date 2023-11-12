@@ -1,5 +1,7 @@
 package deadlock;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -9,6 +11,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @date 2023/07/08 11:20
  * @description Resolve the deadlock problem via the tryLock method of ReentrantLock
  */
+@Slf4j
 public class ResolvedDeadLock {
 
     private final Lock lock1 = new ReentrantLock();
@@ -24,7 +27,7 @@ public class ResolvedDeadLock {
                 if (locked1) {
                     locked2 = lock2.tryLock(1000, TimeUnit.MILLISECONDS);
                     if (locked2) {
-                        System.out.println("the method1 is running");
+                        log.info("the method1 is running");
                     }
                 }
             } catch (InterruptedException e) {
@@ -50,7 +53,7 @@ public class ResolvedDeadLock {
                 if (locked2) {
                     locked1 = lock2.tryLock(1000, TimeUnit.MILLISECONDS);
                     if (locked1) {
-                        System.out.println("the method2 is running");
+                        log.info("the method2 is running");
                     }
                 }
             } catch (InterruptedException e) {

@@ -1,5 +1,7 @@
 package sequentialExecution;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -7,6 +9,7 @@ import java.util.concurrent.CountDownLatch;
  * @date 2023/07/08 21:40
  * @description
  */
+@Slf4j
 public class BankSimulatesByCountdownLatch {
 
     private int balance;
@@ -34,7 +37,7 @@ public class BankSimulatesByCountdownLatch {
         // CountDownLatch2 for guaranteeing the depositThread executed before the withDrawThread(sequential thread execution)
         CountDownLatch countDownLatch2 = new CountDownLatch(1);
         Thread depositThread = new Thread(() -> {
-            System.out.println(Thread.currentThread().getName() + " executed");
+            log.info("{} executed", Thread.currentThread().getName());
             bankSimulatesByCountdownLatch.deposit(500);
             countDownLatch2.countDown();
         }, "depositThread");
@@ -42,7 +45,7 @@ public class BankSimulatesByCountdownLatch {
         Thread withDrawThread = new Thread(() -> {
             try {
                 countDownLatch2.await();
-                System.out.println(Thread.currentThread().getName() + " executed");
+                log.info("{} executed", Thread.currentThread().getName());
                 bankSimulatesByCountdownLatch.withdraw(200);
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -58,6 +61,6 @@ public class BankSimulatesByCountdownLatch {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        System.out.println("The current balance: " + bankSimulatesByCountdownLatch.balance);
+        log.info("The current balance: {}", bankSimulatesByCountdownLatch.balance);
     }
 }

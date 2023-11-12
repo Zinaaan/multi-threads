@@ -1,5 +1,7 @@
 package loopExecution;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -15,6 +17,7 @@ import java.util.concurrent.*;
  * 2. What if this threads have 10000 or more elements?
  * --- multi-threads via ExecutorService
  */
+@Slf4j
 public class LoopExecutionForTimeConsumingTask {
 
     public static void main(String[] args) {
@@ -25,7 +28,7 @@ public class LoopExecutionForTimeConsumingTask {
             list.add(random.nextInt(10));
         }
 
-        System.out.println("list before executed: " + list);
+        log.info("list before executed: {}", list);
 
         // Create a thread pool that have 20 core threads
         ExecutorService executorService = Executors.newFixedThreadPool(20);
@@ -35,25 +38,25 @@ public class LoopExecutionForTimeConsumingTask {
 
         List<Integer> result = new ArrayList<>(list.size());
 
-        System.out.println("Time start: " + new Date());
+        log.info("Time start: " + new Date());
 
         for (int i = 0; i < list.size(); i++) {
             int curr = list.get(i);
             int finalI = i;
             executorService.submit(() -> {
                 try {
-                    System.out.println(finalI + " - Thread: " + Thread.currentThread().getName() + ", curr: " + curr + ", Time before sleep: " + new Date());
+                    log.info("{} - Thread: {}, curr: {}, Time before sleep: {}", finalI, Thread.currentThread().getName(), curr, new Date());
 
                     TimeUnit.SECONDS.sleep(curr);
 
-                    System.out.println(finalI + " - Thread: " + Thread.currentThread().getName() + ", curr: " + curr + ", Time after sleep: " + new Date());
-                    System.out.println("--------------------------------");
+                    log.info("{} - Thread: {}, curr: {}, Time after sleep: {}", finalI, Thread.currentThread().getName(), curr, new Date());
+                    log.info("--------------------------------");
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
                 result.add(curr);
 
-                System.out.println("result: " + result);
+                log.info("result: {}", result);
 
                 countDownLatch.countDown();
             });
@@ -62,19 +65,19 @@ public class LoopExecutionForTimeConsumingTask {
         try {
             countDownLatch.await();
 
-            System.out.println("current thread: " + Thread.currentThread().getName());
+            log.info("current thread: {}", Thread.currentThread().getName());
 
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
-        System.out.println("Time now: " + new Date());
+        log.info("Time now: {}", new Date());
 
         executorService.shutdown();
 
         // Keep the list sorted
         Collections.sort(result);
 
-        System.out.println("list after executed: " + result);
+        log.info("list after executed: {}", result);
     }
 }

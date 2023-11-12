@@ -1,5 +1,7 @@
 package alternateExecution;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.concurrent.Semaphore;
 
 /**
@@ -7,6 +9,7 @@ import java.util.concurrent.Semaphore;
  * @date 2023/07/03 21:40
  * @description
  */
+@Slf4j
 public class AlternateExecutionBySemaphore {
 
     static Semaphore semaphoreA = new Semaphore(1);
@@ -17,7 +20,7 @@ public class AlternateExecutionBySemaphore {
             for (int i = 0; i < 50; i++) {
                 try {
                     semaphoreA.acquire();
-                    System.out.println("a");
+                    log.info("a");
                     semaphoreB.release();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -29,7 +32,7 @@ public class AlternateExecutionBySemaphore {
             for (int i = 0; i < 50; i++) {
                 try {
                     semaphoreB.acquire();
-                    System.out.println("b");
+                    log.info("b");
                     semaphoreA.release();
                 } catch (InterruptedException e) {
                     e.printStackTrace();

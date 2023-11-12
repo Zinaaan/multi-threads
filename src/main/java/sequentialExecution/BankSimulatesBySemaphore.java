@@ -1,5 +1,7 @@
 package sequentialExecution;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.concurrent.Semaphore;
 
 /**
@@ -7,6 +9,7 @@ import java.util.concurrent.Semaphore;
  * @date 2023/07/09 13:34
  * @description
  */
+@Slf4j
 public class BankSimulatesBySemaphore {
 
     private int balance;
@@ -32,7 +35,7 @@ public class BankSimulatesBySemaphore {
         Semaphore semaphore1 = new Semaphore(0);
         Semaphore semaphore2 = new Semaphore(0);
         Thread depositThread = new Thread(() -> {
-            System.out.println(Thread.currentThread().getName() + " executed");
+            log.info("{} executed", Thread.currentThread().getName());
             bankSimulatesBySemaphore.deposit(500);
             semaphore2.release();
         }, "depositThread");
@@ -40,7 +43,7 @@ public class BankSimulatesBySemaphore {
         Thread withdrawThread = new Thread(() -> {
             try {
                 semaphore2.acquire();
-                System.out.println(Thread.currentThread().getName() + " executed");
+                log.info("{} executed", Thread.currentThread().getName());
                 bankSimulatesBySemaphore.withdraw(200);
                 semaphore1.release();
             } catch (InterruptedException e) {
@@ -56,6 +59,6 @@ public class BankSimulatesBySemaphore {
             e.printStackTrace();
         }
 
-        System.out.println("The current balance: " + bankSimulatesBySemaphore.balance);
+        log.info("The current balance: {}", bankSimulatesBySemaphore.balance);
     }
 }

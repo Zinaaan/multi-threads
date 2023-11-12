@@ -1,5 +1,7 @@
 package sequentialExecution;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.concurrent.*;
 
 /**
@@ -7,6 +9,7 @@ import java.util.concurrent.*;
  * @date 2023/07/08 21:40
  * @description
  */
+@Slf4j
 public class BankSimulatesByCompletableFuture {
 
     private int balance;
@@ -34,10 +37,10 @@ public class BankSimulatesByCompletableFuture {
 
         CompletableFuture.runAsync(() -> executorService.execute(() -> {
             bankSimulatesByThreadJoin.deposit(500);
-            System.out.println(Thread.currentThread().getName() + " executed");
+            log.info("{} executed", Thread.currentThread().getName());
         })).thenRun(() -> executorService.execute(() -> {
             bankSimulatesByThreadJoin.withdraw(200);
-            System.out.println(Thread.currentThread().getName() + " executed");
+            log.info("{} executed", Thread.currentThread().getName());
             countDownLatch.countDown();
         }));
         try {
@@ -46,6 +49,6 @@ public class BankSimulatesByCompletableFuture {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        System.out.println("The current balance: " + bankSimulatesByThreadJoin.balance);
+        log.info("The current balance: {}", bankSimulatesByThreadJoin.balance);
     }
 }

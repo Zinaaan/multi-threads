@@ -1,5 +1,7 @@
 package concurrentLRUCache;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -25,6 +27,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * <1>. If the hashmap is full, evict the LRU data and put the current data into the beginning of the bidirectionalLinkedList
  * <2>. Otherwise just put the current data into the beginning of the bidirectionalLinkedList
  */
+@Slf4j
 public class ConcurrentLRUCache {
 
     private final ConcurrentHashMap<Integer, Node> cache;
@@ -52,7 +55,7 @@ public class ConcurrentLRUCache {
 
                 Node node = list.removeNode(curr);
                 // If successfully removed the node
-                if(node.prev == null && node.next == null){
+                if (node.prev == null && node.next == null) {
                     // put the value at the beginning of the bidirectional linked list
                     list.addFirst(curr);
                 }
@@ -99,7 +102,7 @@ public class ConcurrentLRUCache {
                 return true;
             }
         } catch (Exception e) {
-            System.out.println("Error in removing key: " + key + ", reason: " + e.getMessage());
+            log.error("Error in removing key: {}, reason: {}", key, e.getMessage());
         } finally {
             lock.writeLock().unlock();
         }
@@ -197,11 +200,11 @@ public class ConcurrentLRUCache {
         // Thread 2: Read values from the cache
         executorService.submit(() -> {
             // True
-            System.out.println("cache.get(4) == null? " + (cache.get(4) == null));
+            log.info("cache.get(4) == null? {}", cache.get(4) == null);
             // 10
-            System.out.println("cache.get(1).value: " + cache.get(1).value);
+            log.info("cache.get(1).value: {}", cache.get(1).value);
             // 20
-            System.out.println("cache.get(2).value: " + cache.get(2).value);
+            log.info("cache.get(2).value: {}", cache.get(2).value);
             latch.countDown();
         });
 
@@ -209,7 +212,7 @@ public class ConcurrentLRUCache {
         executorService.submit(() -> {
             cache.evict(3);
             // True
-            System.out.println("cache.get(3) == null? " + (cache.get(3) == null));
+            log.info("cache.get(3) == null? {}", cache.get(3) == null);
             latch.countDown();
         });
 
@@ -217,7 +220,7 @@ public class ConcurrentLRUCache {
         executorService.submit(() -> {
             cache.put(4, 40);
             // False
-            System.out.println("cache.get(1) == null? " + (cache.get(1) == null));
+            log.info("cache.get(1) == null? {}", cache.get(1) == null);
             latch.countDown();
         });
 
@@ -225,13 +228,13 @@ public class ConcurrentLRUCache {
         latch.await();
         executorService.shutdown();
         // Verify cache state after all operations
-         // True, Key 3 should have been removed
-        System.out.println("cache.get(3) == null? " + (cache.get(3) == null));
+        // True, Key 3 should have been removed
+        log.info("cache.get(3) == null? {}", cache.get(3) == null);
         // 10, Key 1 should still be in the cache
-        System.out.println("cache.get(1).value: " + cache.get(1).value);
-         // 20,  Key 2 should still be in the cache
-        System.out.println("cache.get(2).value: " + cache.get(2).value);
+        log.info("cache.get(1).value: {}", cache.get(1).value);
+        // 20,  Key 2 should still be in the cache
+        log.info("cache.get(2).value: {}", cache.get(2).value);
         // False, Key 4 should be in the cache
-        System.out.println("cache.get(4) == null? " + (cache.get(4) == null));
+        log.info("cache.get(4) == null? {}", cache.get(4) == null);
     }
 }

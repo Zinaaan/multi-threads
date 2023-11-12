@@ -1,5 +1,7 @@
 package alternateExecution;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -12,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 3. Used AtomicInteger to accumulate the execution times
  * 4. Make sure that the child thread will exit the entire process via "if (atomicInteger.get() > 100) return;" so that to signal the main to continue processing
  */
+@Slf4j
 public class AlternateExecutionByLock {
 
     static boolean isContinue = true;
@@ -22,7 +25,7 @@ public class AlternateExecutionByLock {
         Thread thread1 = new Thread(() -> {
             synchronized (lock) {
                 while (isContinue) {
-                    System.out.println(atomicInteger.get() + "a");
+                    log.info("{}a", atomicInteger.get());
                     lock.notify();
                     try {
                         atomicInteger.incrementAndGet();
@@ -43,7 +46,7 @@ public class AlternateExecutionByLock {
         Thread thread2 = new Thread(() -> {
             synchronized (lock) {
                 while (!isContinue) {
-                    System.out.println(atomicInteger.get() + "b");
+                    log.info("{}b", atomicInteger.get());
                     lock.notify();
                     try {
                         atomicInteger.incrementAndGet();

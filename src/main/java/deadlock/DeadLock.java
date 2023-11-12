@@ -1,10 +1,13 @@
 package deadlock;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author lzn
  * @date 2023/07/08 11:20
  * @description Typical example for deadlock
  */
+@Slf4j
 public class DeadLock {
 
     private final String str1 = "2";
@@ -19,7 +22,7 @@ public class DeadLock {
                     e.printStackTrace();
                 }
                 synchronized (str2) {
-                    System.out.println("the method1 is running");
+                    log.info("the method1 is running");
                 }
             }
         });
@@ -34,7 +37,7 @@ public class DeadLock {
                     e.printStackTrace();
                 }
                 synchronized (str1) {
-                    System.out.println("the method2 is running");
+                    log.info("the method2 is running");
                 }
             }
         });

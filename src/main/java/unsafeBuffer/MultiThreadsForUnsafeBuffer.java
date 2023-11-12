@@ -1,5 +1,6 @@
 package unsafeBuffer;
 
+import lombok.extern.slf4j.Slf4j;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
@@ -14,6 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @date 2023/10/08 14:54
  * @description Multi-threads operation of HashMap with UnsafeBuffer of Agrona library as key
  */
+@Slf4j
 public class MultiThreadsForUnsafeBuffer {
 
     private static final MultiThreadsForUnsafeBuffer INSTANCE = new MultiThreadsForUnsafeBuffer();
@@ -38,10 +40,10 @@ public class MultiThreadsForUnsafeBuffer {
             if (!latencyMap.containsKey(keyBuffer)) {
                 MetricBuffer key = new MetricBuffer(ByteBuffer.allocate(8));
                 key.wrap(bytes);
-                System.out.println("new key clientId: " + key.getClientId() + ", point: " + key.getPoint());
+                log.info("new key clientId: {}, point: {}, latency: {}", key.getClientId(), key.getPoint(), key.getLatency());
                 latencyMap.put(key, keyBuffer.getLatency());
             } else {
-                System.out.println("old key clientId: " + keyBuffer.getClientId() + ", point: " + keyBuffer.getPoint());
+                log.info("old key clientId: {}, point: {}, latency: {}", keyBuffer.getClientId(), keyBuffer.getPoint(), keyBuffer.getLatency());
                 latencyMap.put(keyBuffer, keyBuffer.getLatency());
             }
         } finally {
@@ -52,7 +54,7 @@ public class MultiThreadsForUnsafeBuffer {
     public long getLatency(byte[] bytes) {
         MetricBuffer keyBuffer = reusableRetrieveBuffer.get();
         keyBuffer.wrap(bytes);
-        System.out.println("get key clientId: " + keyBuffer.getClientId() + ", point: " + keyBuffer.getPoint() + ", latency: " + keyBuffer.getLatency());
+        log.info("get key clientId: {}, point: {}, latency: {}", keyBuffer.getClientId(), keyBuffer.getPoint(), keyBuffer.getLatency());
         return latencyMap.getOrDefault(keyBuffer, 0L);
     }
 
@@ -89,7 +91,7 @@ public class MultiThreadsForUnsafeBuffer {
         }
 
         latch.await();
-        System.out.println("Map: " + creationByThreadLocal.getLatencyMap());
+        log.info("Map: {}", creationByThreadLocal.getLatencyMap());
         List<Future<Long>> latencyList = new ArrayList<>();
         for (int i = 0; i < populateCount; i++) {
             final int finalI = i;
@@ -99,15 +101,15 @@ public class MultiThreadsForUnsafeBuffer {
 
         latencyList.forEach(longFuture -> {
             try {
-                System.out.println("latency: " + longFuture.get());
+                log.info("latency: {}", longFuture.get());
             } catch (InterruptedException e) {
-                System.out.println("Error on interrupted: " + e.getMessage());
+                log.info("Error on interrupted: {}", e.getMessage());
             } catch (ExecutionException e) {
-                System.out.println("Error on Execution: " + e.getMessage());
+                log.info("Error on Execution: {}", e.getMessage());
             }
         });
 
         executorService.shutdown();
-        System.out.println("Time cost: " + Duration.between(startTime, LocalDateTime.now()).getNano() / 1000 / 1000 + " milliseconds");
+        log.info("Time cost: {} milliseconds", Duration.between(startTime, LocalDateTime.now()).getNano() / 1000 / 1000);
     }
 }

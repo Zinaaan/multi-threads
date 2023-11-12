@@ -1,5 +1,7 @@
 package producerConsumer;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.ArrayDeque;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -11,6 +13,7 @@ import java.util.concurrent.TimeUnit;
  * @date 2023/07/19 21:28
  * @description
  */
+@Slf4j
 public class ProducerConsumerByThread {
     private final int capacity = 10;
     private final Queue<String> queue = new ArrayDeque<>(capacity);
@@ -21,7 +24,7 @@ public class ProducerConsumerByThread {
             while (true) {
                 synchronized (object) {
                     while (queue.size() == capacity) {
-                        System.out.println("Buffer is full. Producer is waiting...");
+                        log.info("Buffer is full. Producer is waiting...");
                         try {
                             object.wait();
                         } catch (InterruptedException e) {
@@ -30,7 +33,7 @@ public class ProducerConsumerByThread {
                     }
                     String message = "message";
                     queue.offer(message);
-                    System.out.println("write message: " + message);
+                    log.info("write message: {}", message);
                     object.notify();
                     try {
                         TimeUnit.SECONDS.sleep(1);
@@ -47,7 +50,7 @@ public class ProducerConsumerByThread {
             while (true) {
                 synchronized (object) {
                     while (queue.isEmpty()) {
-                        System.out.println("Buffer is empty. Consumer is waiting...");
+                        log.info("Buffer is empty. Consumer is waiting...");
                         try {
                             object.wait();
                         } catch (InterruptedException e) {
@@ -55,7 +58,7 @@ public class ProducerConsumerByThread {
                         }
                     }
                     String message = queue.poll();
-                    System.out.println("read message: " + message);
+                    log.info("read message: {}", message);
                     object.notify();
                     try {
                         TimeUnit.SECONDS.sleep(1);

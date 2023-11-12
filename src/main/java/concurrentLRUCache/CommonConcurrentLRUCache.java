@@ -1,5 +1,7 @@
 package concurrentLRUCache;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -10,6 +12,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Optimization:
  * Introducing a ReentrantReadWriteLock to separate read and write operations, which is useful in the current situation where there are more reads than writes.
  */
+@Slf4j
 public class CommonConcurrentLRUCache<K, V> {
 
     private final ConcurrentHashMap<K, V> cache;
@@ -74,7 +77,7 @@ public class CommonConcurrentLRUCache<K, V> {
                 return true;
             }
         } catch (Exception e) {
-            System.out.println("Error in removing key: " + key + ", reason: " + e.getMessage());
+            log.error("Error in removing key: {}, reason: {}", key, e.getMessage());
         } finally {
             lock.writeLock().unlock();
         }
@@ -109,11 +112,11 @@ public class CommonConcurrentLRUCache<K, V> {
         // Thread 2: Read values from the cache
         executorService.submit(() -> {
             // True
-            System.out.println("cache.get(4) == null? " + (cache.get(4) == null));
+            log.info("cache.get(4) == null? {}", cache.get(4) == null);
             // 10
-            System.out.println("cache.get(1).value: " + cache.get(1));
+            log.info("cache.get(1).value: {}", cache.get(1));
             // 20
-            System.out.println("cache.get(2).value: " + cache.get(2));
+            log.info("cache.get(2).value: {}", cache.get(2));
             latch.countDown();
         });
 
@@ -121,7 +124,7 @@ public class CommonConcurrentLRUCache<K, V> {
         executorService.submit(() -> {
             cache.evict(3);
             // True
-            System.out.println("cache.get(3) == null? " + (cache.get(3) == null));
+            log.info("cache.get(3) == null? {}", cache.get(3) == null);
             latch.countDown();
         });
 
@@ -129,7 +132,7 @@ public class CommonConcurrentLRUCache<K, V> {
         executorService.submit(() -> {
             cache.put(4, 40);
             // False
-            System.out.println("cache.get(1) == null? " + (cache.get(1) == null));
+            log.info("cache.get(1) == null? {}", cache.get(1) == null);
             latch.countDown();
         });
 
@@ -138,12 +141,12 @@ public class CommonConcurrentLRUCache<K, V> {
         executorService.shutdown();
         // Verify cache state after all operations
         // True, Key 3 should have been removed
-        System.out.println("cache.get(3) == null? " + (cache.get(3) == null));
+        log.info("cache.get(3) == null? {}", cache.get(3) == null);
         // 10, Key 1 should still be in the cache
-        System.out.println("cache.get(1).value: " + cache.get(1));
+        log.info("cache.get(1).value: {}", cache.get(1));
         // 20,  Key 2 should still be in the cache
-        System.out.println("cache.get(2).value: " + cache.get(2));
+        log.info("cache.get(2).value: {}", cache.get(2));
         // False, Key 4 should be in the cache
-        System.out.println("cache.get(4) == null? " + (cache.get(4) == null));
+        log.info("cache.get(4) == null? {}", cache.get(4) == null);
     }
 }

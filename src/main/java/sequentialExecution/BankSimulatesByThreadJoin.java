@@ -1,10 +1,13 @@
 package sequentialExecution;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author lzn
  * @date 2023/07/08 21:40
  * @description
  */
+@Slf4j
 public class BankSimulatesByThreadJoin {
 
     private int balance;
@@ -29,11 +32,11 @@ public class BankSimulatesByThreadJoin {
         BankSimulatesByThreadJoin bankSimulatesByThreadJoin = new BankSimulatesByThreadJoin();
         Thread depositThread = new Thread(() -> {
             bankSimulatesByThreadJoin.deposit(500);
-            System.out.println(Thread.currentThread().getName() + " executed");
+            log.info("{} executed", Thread.currentThread().getName());
         }, "depositThread");
         Thread withDrawThread = new Thread(() -> {
             bankSimulatesByThreadJoin.withdraw(200);
-            System.out.println(Thread.currentThread().getName() + " executed");
+            log.info("{} executed", Thread.currentThread().getName());
         }, "withDrawThread");
 
         depositThread.start();
@@ -45,6 +48,6 @@ public class BankSimulatesByThreadJoin {
             e.printStackTrace();
         }
 
-        System.out.println("The current balance: " + bankSimulatesByThreadJoin.balance);
+        log.info("The current balance: {}", bankSimulatesByThreadJoin.balance);
     }
 }
