@@ -27,34 +27,33 @@ public class MultiThreadsForUnsafeBuffer {
         return INSTANCE;
     }
 
-    private final Map<MetricBuffer, Long> latencyMap = new HashMap<>();
-    private final ThreadLocal<MetricBuffer> reusableKeyBuffer = ThreadLocal.withInitial(() -> new MetricBuffer(ByteBuffer.allocate(8)));
-    private final ThreadLocal<MetricBuffer> reusableRetrieveBuffer = ThreadLocal.withInitial(() -> new MetricBuffer(ByteBuffer.allocate(8)));
-    private final ReentrantLock lock = new ReentrantLock();
+    private final Map<MetricBuffer, Long> latencyMap = new ConcurrentHashMap<>();
+    private final ThreadLocal<MetricBuffer> reusableKeyBuffer = ThreadLocal.withInitial(() -> new MetricBuffer(ByteBuffer.allocate(16)));
+    private final ThreadLocal<MetricBuffer> reusableRetrieveBuffer = ThreadLocal.withInitial(() -> new MetricBuffer(ByteBuffer.allocate(16)));
 
     public void aggregateMetrics(byte[] bytes) {
-        MetricBuffer keyBuffer = reusableKeyBuffer.get();
-        keyBuffer.wrap(bytes);
-        lock.lock();
         try {
-            if (!latencyMap.containsKey(keyBuffer)) {
-                MetricBuffer key = new MetricBuffer(ByteBuffer.allocate(8));
-                key.wrap(bytes);
-                log.info("new key clientId: {}, point: {}, latency: {}", key.getClientId(), key.getPoint(), key.getLatency());
-                latencyMap.put(key, keyBuffer.getLatency());
-            } else {
-                log.info("old key clientId: {}, point: {}, latency: {}", keyBuffer.getClientId(), keyBuffer.getPoint(), keyBuffer.getLatency());
-                latencyMap.put(keyBuffer, keyBuffer.getLatency());
-            }
+            MetricBuffer keyBuffer = reusableKeyBuffer.get();
+            keyBuffer.wrap(bytes);
+            log.info("contains: {},clientId: {}, point: {}, latency: {}",latencyMap.containsKey(keyBuffer), keyBuffer.getClientId(), keyBuffer.getPoint(), keyBuffer.getLatency());
+            latencyMap.put(keyBuffer, keyBuffer.getLatency());
+        } catch (Exception e) {
+            log.error("Error in aggregateMetrics: {}", e.getMessage());
         } finally {
-            lock.unlock();
+            reusableKeyBuffer.remove();
         }
     }
 
     public long getLatency(byte[] bytes) {
         MetricBuffer keyBuffer = reusableRetrieveBuffer.get();
-        keyBuffer.wrap(bytes);
-        log.info("get key clientId: {}, point: {}, latency: {}", keyBuffer.getClientId(), keyBuffer.getPoint(), keyBuffer.getLatency());
+        try {
+            keyBuffer.wrap(bytes);
+            log.info("get key clientId: {}, point: {}, latency: {}", keyBuffer.getClientId(), keyBuffer.getPoint(), keyBuffer.getLatency());
+        } catch (Exception e) {
+            log.error("Error in getLatency: {}", e.getMessage());
+        } finally {
+            reusableRetrieveBuffer.remove();
+        }
         return latencyMap.getOrDefault(keyBuffer, 0L);
     }
 
@@ -74,7 +73,7 @@ public class MultiThreadsForUnsafeBuffer {
         List<byte[]> keyList = new ArrayList<>();
         for (int i = 0; i < populateCount; i++) {
             long start = System.nanoTime();
-            UnsafeBuffer unsafeBuffer = new UnsafeBuffer(ByteBuffer.allocate(16));
+            MetricBuffer unsafeBuffer = new MetricBuffer(ByteBuffer.allocate(16));
             unsafeBuffer.putInt(0, random.nextInt(100) + 5);
             unsafeBuffer.putInt(4, random.nextInt(5));
 //            unsafeBuffer.putInt(0, 5);
@@ -91,7 +90,7 @@ public class MultiThreadsForUnsafeBuffer {
         }
 
         latch.await();
-        log.info("Map: {}", creationByThreadLocal.getLatencyMap());
+        log.info("Map size: {}", creationByThreadLocal.getLatencyMap().size());
         List<Future<Long>> latencyList = new ArrayList<>();
         for (int i = 0; i < populateCount; i++) {
             final int finalI = i;
@@ -101,7 +100,8 @@ public class MultiThreadsForUnsafeBuffer {
 
         latencyList.forEach(longFuture -> {
             try {
-                log.info("latency: {}", longFuture.get());
+                Long latency = longFuture.get();
+                log.info("latency: {}", latency);
             } catch (InterruptedException e) {
                 log.info("Error on interrupted: {}", e.getMessage());
             } catch (ExecutionException e) {
