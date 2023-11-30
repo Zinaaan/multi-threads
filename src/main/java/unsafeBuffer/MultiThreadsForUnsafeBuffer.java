@@ -1,19 +1,24 @@
 package unsafeBuffer;
 
 import lombok.extern.slf4j.Slf4j;
-import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author lzn
  * @date 2023/10/08 14:54
  * @description Multi-threads operation of HashMap with UnsafeBuffer of Agrona library as key
+ *
+ * Key point:
+ * 1. Instead of create a new key of map every time for aggregating and retrieving, use thread local to reuse it
+ * 2. Don't forget to remove after using thread local object, especially in multithreaded env as it might cause memory leak
  */
 @Slf4j
 public class MultiThreadsForUnsafeBuffer {
@@ -44,17 +49,19 @@ public class MultiThreadsForUnsafeBuffer {
         }
     }
 
-    public long getLatency(byte[] bytes) {
+    public Long getLatency(byte[] bytes) {
         MetricBuffer keyBuffer = reusableRetrieveBuffer.get();
+        Long latency = 0L;
         try {
             keyBuffer.wrap(bytes);
             log.info("get key clientId: {}, point: {}, latency: {}", keyBuffer.getClientId(), keyBuffer.getPoint(), keyBuffer.getLatency());
+            latency = latencyMap.get(keyBuffer);
         } catch (Exception e) {
             log.error("Error in getLatency: {}", e.getMessage());
         } finally {
             reusableRetrieveBuffer.remove();
         }
-        return latencyMap.getOrDefault(keyBuffer, 0L);
+        return latency;
     }
 
     public Map<MetricBuffer, Long> getLatencyMap() {
