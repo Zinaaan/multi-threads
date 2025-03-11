@@ -3,8 +3,8 @@ plugins {
 }
 
 compileJava {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
@@ -19,7 +19,7 @@ dependencies {
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'org.agrona:agrona:1.19.2'
     implementation 'ch.qos.logback:logback-core:1.3.5'
-    implementation 'ch.qos.logback:logback-classic:1.3.5'
+    implementation 'ch.qos.logback:logback-classic:1.4.12'
     implementation 'org.slf4j:slf4j-api:2.0.4'
     implementation 'org.projectlombok:lombok:1.18.12'
 }
