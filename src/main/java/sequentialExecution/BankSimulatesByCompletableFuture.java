@@ -32,22 +32,27 @@ public class BankSimulatesByCompletableFuture {
 
     public static void main(String[] args) {
         BankSimulatesByCompletableFuture bankSimulatesByThreadJoin = new BankSimulatesByCompletableFuture();
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        ExecutorService executorService = Executors.newFixedThreadPool(2);
-
-        CompletableFuture.runAsync(() -> executorService.execute(() -> {
+        CountDownLatch cdForWithdraw = new CountDownLatch(1);
+        CountDownLatch cdForMain = new CountDownLatch(1);
+        CompletableFuture.runAsync(() -> {
             bankSimulatesByThreadJoin.deposit(500);
-            log.info("{} executed", Thread.currentThread().getName());
-        })).thenRun(() -> executorService.execute(() -> {
-            bankSimulatesByThreadJoin.withdraw(200);
-            log.info("{} executed", Thread.currentThread().getName());
-            countDownLatch.countDown();
-        }));
+            log.info("Deposited: {}", 500);
+            cdForWithdraw.countDown();
+        });
+        CompletableFuture.runAsync(() -> {
+            try {
+                cdForWithdraw.await();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            bankSimulatesByThreadJoin.withdraw(300);
+            log.info("Withdrew {}", 300);
+            cdForMain.countDown();
+        });
         try {
-            countDownLatch.await();
-            executorService.shutdown();
+            cdForMain.await();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         log.info("The current balance: {}", bankSimulatesByThreadJoin.balance);
     }
