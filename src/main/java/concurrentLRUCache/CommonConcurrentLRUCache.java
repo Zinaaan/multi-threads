@@ -8,7 +8,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * @author lzn
  * @date 2023/07/16 18:03
- * @description The implementation of multi-thread version for common LRU cache
+ * The implementation of multi-thread version for common LRU cache
  * Optimization:
  * Introducing a ReentrantReadWriteLock to separate read and write operations, which is useful in the current situation where there are more reads than writes.
  */

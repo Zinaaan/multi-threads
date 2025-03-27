@@ -8,7 +8,7 @@ import java.util.concurrent.*;
 /**
  * @author lzn
  * @date 2023/07/14 21:54
- * @description If you are given an array and there will be duplicates in the array, and each number has to be SLEEP for the appropriate amount of time,
+ * If you are given an array and there will be duplicates in the array, and each number has to be SLEEP for the appropriate amount of time,
  * and then you can PUSH it into the list. For example, the value 2 from the list should sleep for 2 seconds.
  * And you need to ensure that all the numbers are sorted at the end as well.
  * <p>

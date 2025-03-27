@@ -11,7 +11,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * @author lzn
  * @date 2023/07/16 18:03
- * @description The implementation of multi-thread version for LRU cache
+ * The implementation of multi-thread version for LRU cache
  * <p>
  * 1. Build a new Node class that includes key and value to indicates the element of LRU cache
  * 2. Build a bidirectional linked list class have both prev pointer, next pointer and Node element
@@ -22,7 +22,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * <p>
  * Functional:
  * 1. get: If key is not exists in the hashmap, return -1. Otherwise return Node.value and switch the value to the frequent used position
- * 2. put: If key is exists in the hashmap, change the old value to the new one and switch the value to the frequent used position
+ * 2. put: If key is existing in the hashmap, change the old value to the new one and switch the value to the frequent used position
  * --Otherwise:
  * <1>. If the hashmap is full, evict the LRU data and put the current data into the beginning of the bidirectionalLinkedList
  * <2>. Otherwise just put the current data into the beginning of the bidirectionalLinkedList

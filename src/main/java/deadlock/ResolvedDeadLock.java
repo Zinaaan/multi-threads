@@ -9,7 +9,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * @author lzn
  * @date 2023/07/08 11:20
- * @description Resolve the deadlock problem via the tryLock method of ReentrantLock
+ * Resolve the deadlock problem via the tryLock method of ReentrantLock
  */
 @Slf4j
 public class ResolvedDeadLock {

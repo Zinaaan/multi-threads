@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author lzn
  * @date 2023/07/03 20:38
- * @description Tips: After invoking the notify(), the current thread will not release the lock and wake up other thread immediately unless the synchronized block is completed
+ * Tips: After invoking the notify(), the current thread will not release the lock and wake up other thread immediately unless the synchronized block is completed
  * <p>
  * 1. Used isContinue to guarantee that "a" will output firstly
  * 2. Guarantee alternate execution by lock.wait() and lock.notify() -> (stop executing the thread1 and release lock, so the thread2 will acquire this lock and start executing)

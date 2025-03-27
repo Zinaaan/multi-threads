@@ -5,16 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
  * @author lzn
  * @date 2023/10/08 14:54
- * @description Multi-threads operation of HashMap with UnsafeBuffer of Agrona library as key
+ * Multi-threads operation of HashMap with UnsafeBuffer of Agrona library as key
  *
  * Key point:
  * 1. Instead of create a new key of map every time for aggregating and retrieving, use thread local to reuse it
@@ -69,11 +66,12 @@ public class MultiThreadsForUnsafeBuffer {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        MultiThreadsForUnsafeBuffer creationByThreadLocal = MultiThreadsForUnsafeBuffer.getInstance();
+        MultiThreadsForUnsafeBuffer unsafeBufferTest = MultiThreadsForUnsafeBuffer.getInstance();
         Random random = new Random();
         int threadCount = 10;
         int populateCount = 50;
-        CountDownLatch latch = new CountDownLatch(populateCount);
+        CountDownLatch clForGeneration = new CountDownLatch(populateCount);
+        CountDownLatch clForExecution = new CountDownLatch(populateCount);
         ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
         LocalDateTime startTime = LocalDateTime.now();
 
@@ -91,32 +89,23 @@ public class MultiThreadsForUnsafeBuffer {
         for (int i = 0; i < populateCount; i++) {
             final int finalI = i;
             executorService.execute(() -> {
-                creationByThreadLocal.aggregateMetrics(keyList.get(finalI));
-                latch.countDown();
+                unsafeBufferTest.aggregateMetrics(keyList.get(finalI));
+                clForGeneration.countDown();
             });
         }
-
-        latch.await();
-        log.info("Map size: {}", creationByThreadLocal.getLatencyMap().size());
-        List<Future<Long>> latencyList = new ArrayList<>();
-        for (int i = 0; i < populateCount; i++) {
-            final int finalI = i;
-            Future<Long> latencyFuture = executorService.submit(() -> creationByThreadLocal.getLatency(keyList.get(finalI)));
-            latencyList.add(latencyFuture);
-        }
-
-        latencyList.forEach(longFuture -> {
-            try {
-                Long latency = longFuture.get();
-                log.info("latency: {}", latency);
-            } catch (InterruptedException e) {
-                log.info("Error on interrupted: {}", e.getMessage());
-            } catch (ExecutionException e) {
-                log.info("Error on Execution: {}", e.getMessage());
-            }
-        });
-
+        clForGeneration.await();
         executorService.shutdown();
+        log.info("Map size: {}", unsafeBufferTest.getLatencyMap().size());
+        for (int i = 0; i < populateCount; i++) {
+            int finalI = i;
+            CompletableFuture
+                    .supplyAsync(() -> unsafeBufferTest.getLatency(keyList.get(finalI)))
+                    .thenAccept(latency -> {
+                        log.info("latency: {}", latency);
+                        clForExecution.countDown();
+                    });
+        }
+        clForExecution.await();
         log.info("Time cost: {} milliseconds", Duration.between(startTime, LocalDateTime.now()).getNano() / 1000 / 1000);
     }
 }

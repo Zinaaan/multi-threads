@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * @author lzn
  * @date 2023/07/08 11:20
- * @description Typical example for deadlock
+ * Typical example for deadlock
  */
 @Slf4j
 public class DeadLock {
