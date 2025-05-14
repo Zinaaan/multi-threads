@@ -12,6 +12,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author lzn
  * @date 2023/07/16 18:03
  * The implementation of multi-thread version for LRU cache
+ *
  * <p>
  * 1. Build a new Node class that includes key and value to indicates the element of LRU cache
  * 2. Build a bidirectional linked list class have both prev pointer, next pointer and Node element
@@ -43,30 +44,26 @@ public class ConcurrentLRUCache {
     }
 
     public Node get(int key) {
-        Node curr = cache.get(key);
-        if (curr != null) {
-            lock.readLock().lock();
-            try {
+        lock.readLock().lock();
+        try {
+            Node curr = cache.get(key);
+            if (curr != null) {
 
                 // Invoke put method in multi-thread environment will cause deadlock as the put method will acquire write lock as well
                 // Because a write lock is exclusive and does not allow concurrent read or write access.
                 // Since you already have a read lock acquired, the writeLock().lock() call will block until all read locks are released.
 //                put(key, curr.value);
-
                 Node node = list.removeNode(curr);
                 // If successfully removed the node
                 if (node.prev == null && node.next == null) {
                     // put the value at the beginning of the bidirectional linked list
                     list.addFirst(curr);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                lock.readLock().unlock();
             }
+            return curr;
+        } finally {
+            lock.readLock().unlock();
         }
-
-        return curr;
     }
 
     public void put(int key, int value) {

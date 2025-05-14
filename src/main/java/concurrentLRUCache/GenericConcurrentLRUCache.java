@@ -8,19 +8,20 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * @author lzn
  * @date 2023/07/16 18:03
+ *
  * The implementation of multi-thread version for common LRU cache
  * Optimization:
  * Introducing a ReentrantReadWriteLock to separate read and write operations, which is useful in the current situation where there are more reads than writes.
  */
 @Slf4j
-public class CommonConcurrentLRUCache<K, V> {
+public class GenericConcurrentLRUCache<K, V> {
 
     private final ConcurrentHashMap<K, V> cache;
     private final ConcurrentLinkedDeque<K> queue;
     private final ReentrantReadWriteLock lock;
     private final int capacity;
 
-    public CommonConcurrentLRUCache(int capacity) {
+    public GenericConcurrentLRUCache(int capacity) {
         cache = new ConcurrentHashMap<>();
         queue = new ConcurrentLinkedDeque<>();
         lock = new ReentrantReadWriteLock();
@@ -28,21 +29,19 @@ public class CommonConcurrentLRUCache<K, V> {
     }
 
     public V get(K key) {
-        V curr = cache.get(key);
-        if (curr != null) {
-            lock.readLock().lock();
-            try {
+        lock.readLock().lock();
+        try {
+            V curr = cache.get(key);
+            if (curr != null) {
                 if (queue.remove(key)) {
                     queue.offer(key);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                lock.readLock().unlock();
             }
-        }
 
-        return curr;
+            return curr;
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     public void put(K key, V value) {
@@ -61,8 +60,6 @@ public class CommonConcurrentLRUCache<K, V> {
             // put the data into the beginning
             cache.put(key, value);
             queue.offer(key);
-        } catch (Exception e) {
-            e.printStackTrace();
         } finally {
             lock.writeLock().unlock();
         }
@@ -94,7 +91,7 @@ public class CommonConcurrentLRUCache<K, V> {
 
     public static void main(String[] args) throws InterruptedException {
         int capacity = 3;
-        CommonConcurrentLRUCache<Integer, Integer> cache = new CommonConcurrentLRUCache<>(capacity);
+        GenericConcurrentLRUCache<Integer, Integer> cache = new GenericConcurrentLRUCache<>(capacity);
 
         ExecutorService executorService = Executors.newFixedThreadPool(4);
 
